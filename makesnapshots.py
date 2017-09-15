@@ -56,7 +56,7 @@ def usage():
 
 if (len(sys.argv) < 3):
     usage()
-    quit()
+    exit(1)
 else:
     if sys.argv[1] == 'day':
         period = 'day'
@@ -69,14 +69,14 @@ else:
         date_suffix = datetime.today().strftime('%b')
     else:
         usage()
-        quit()
+        exit(1)
 
     if sys.argv[2] in regions:
         ec2_region_name = sys.argv[2]
         ec2_region_endpoint = 'ec2.' + ec2_region_name + '.amazonaws.com'
     else:
         usage()
-        quit()
+        exit(1)
 
 # Message to return result via SNS
 message = ""
@@ -264,4 +264,3 @@ if sns_arn:
     sns.publish(sns_arn, message, 'Finished AWS snapshotting')
 
 logging.info(result)
-
