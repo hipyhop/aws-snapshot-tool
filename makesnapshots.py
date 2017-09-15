@@ -2,7 +2,7 @@
 #
 # (c) 2012/2014 E.M. van Nuil / Oblivion b.v.
 #
-# makesnapshots.py version 3.3
+# makesnapshots.py version 3.4
 #
 # Changelog
 # version 1:   Initial version
@@ -19,6 +19,7 @@
 # version 3.1: Fix a bug with the deletelist and added a pause in the volume loop
 # version 3.2: Tags of the volume are placed on the new snapshot
 # version 3.3: Merged IAM role addidtion from Github
+# version 3.4: Added ability to pass region from the command-line
 
 from boto.ec2.connection import EC2Connection
 from boto.ec2.regioninfo import RegionInfo
@@ -29,9 +30,32 @@ import sys
 import logging
 from config import config
 
+regions = {
+    'ca-central-1': 'Canada',
+    'us-east-1': 'N. Virginia',
+    'us-east-2': 'Ohio',
+    'us-west-1': 'N. California',
+    'us-west-2': 'Oregon',
+    'eu-west-1': 'Ireland',
+    'eu-west-2': 'London',
+    'eu-central-1': 'Frankfurt',
+    'ap-northeast-1': 'Tokyo',
+    'ap-northeast-2': 'Seoul',
+    'ap-south-1': 'Mumbai',
+    'ap-southeast-1': 'Singapore',
+    'ap-southeast-2': 'Sydney',
+    'sa-east-1': 'Sao Paulo'
+}
 
-if (len(sys.argv) < 2):
-    print('Please add a positional argument: day, week or month.')
+def usage():
+    print('Usage: ' + sys.argv[0] + "[day|week|month] [region]")
+    print
+    print('Valid regions are:')
+    for r in sorted(regions.keys()):
+        print('  - {:<15} ({})'.format(r, regions[r]))
+
+if (len(sys.argv) < 3):
+    usage()
     quit()
 else:
     if sys.argv[1] == 'day':
@@ -44,7 +68,14 @@ else:
         period = 'month'
         date_suffix = datetime.today().strftime('%b')
     else:
-        print('Please use the parameter day, week or month')
+        usage()
+        quit()
+
+    if sys.argv[2] in regions:
+        ec2_region_name = sys.argv[2]
+        ec2_region_endpoint = 'ec2.' + ec2_region_name + '.amazonaws.com'
+    else:
+        usage()
         quit()
 
 # Message to return result via SNS
@@ -69,10 +100,8 @@ message += start_message + "\n\n"
 logging.info(start_message)
 
 # Get settings from config.py
-aws_access_key = config['aws_access_key']
-aws_secret_key = config['aws_secret_key']
-ec2_region_name = config['ec2_region_name']
-ec2_region_endpoint = config['ec2_region_endpoint']
+aws_access_key = config.get('aws_access_key')
+aws_secret_key = config.get('aws_secret_key')
 sns_arn = config.get('arn')
 proxyHost = config.get('proxyHost')
 proxyPort = config.get('proxyPort')
